@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"] });
 import Image from "next/image";
 import logo from "../../public/logo-main.svg";
 import { ProfileBadge } from "@/components/ProfileBadge";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "SportHive Connect",
@@ -23,17 +22,19 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={cn(inter.className, "bg-slate-50 text-slate-900")}>
+      <body className={cn("bg-slate-50 text-slate-900")}>
         <div className="flex flex-col">
           <header className="border-b bg-white/80 backdrop-blur">
             <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-2">
               <div className="flex items-center gap-2">
-                <Image
-                  src={logo}
-                  className={`md:w-[140px] w-[100px]`}
-                  alt="SportHive Connect Logo"
-                  loading="eager"
-                />
+                <Link href="/">
+                  <Image
+                    src={logo}
+                    className={`md:w-[140px] w-[100px] cursor-pointer`}
+                    alt="SportHive Connect Logo"
+                    loading="eager"
+                  />
+                </Link>
               </div>
 
               {/* Right side: put auth/profile links later */}

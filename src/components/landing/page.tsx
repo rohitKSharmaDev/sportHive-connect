@@ -10,8 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { heroCarouselSlides } from "@/lib/constants";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function LandingHeroCarousel() {
+  const router = useRouter();
   const [current, setCurrent] = React.useState(0);
   const [isMounted, setIsMounted] = React.useState(false);
 
@@ -32,6 +34,10 @@ export function LandingHeroCarousel() {
   }, [isMounted, total]);
 
   if (!isMounted) return null;
+
+  const handleCtaClick = () => {
+    router.push("/auth/sign-in");
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-2 lg:mt-5">
@@ -91,7 +97,7 @@ export function LandingHeroCarousel() {
                   </div>
 
                   {/* CTA */}
-                  <Button className="h-11 rounded-full text-sm font-semibold self-center">
+                  <Button className="h-11 rounded-full text-sm font-semibold self-center" onClick={handleCtaClick}>
                     {slide.cta}
                   </Button>
                 </CardContent>

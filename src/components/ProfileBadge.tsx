@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import React from "react";
 import { Button } from "./ui/button";
+import { UserRound } from "lucide-react";
 
 type ProfileBadgeProps = {
   user?: {
     name: string;
-    avatar?: string; // optional custom avatar URL
+    avatar?: string;
   } | null;
 };
 
@@ -17,9 +18,9 @@ export function ProfileBadge({ user }: ProfileBadgeProps) {
 
   const handleClick = () => {
     if (!user) {
-      router.push("/login"); // Redirect to your login page
+      router.push("/auth/sign-in");
     } else {
-      router.push("/profile"); // User profile page
+      router.push("/profile");
     }
   };
 
@@ -38,7 +39,7 @@ export function ProfileBadge({ user }: ProfileBadgeProps) {
           className="rounded-full object-cover"
         />
       ) : (
-        <span className="text-lg fill-white">👤</span>
+        <UserRound />
       )}
     </Button>
   );
