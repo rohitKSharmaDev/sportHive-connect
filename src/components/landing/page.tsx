@@ -42,7 +42,7 @@ export function LandingHeroCarousel() {
   return (
     <div className="w-full max-w-4xl mx-auto mt-2 lg:mt-5">
       <Carousel
-        key={current} // force remount so startIndex is respected
+        key={current}
         opts={{ loop: true, startIndex: current }}
         className="w-full shadow-xl sm:shadow-2xl px-4 rounded-xl"
       >
