@@ -6,6 +6,7 @@ import Image from "next/image";
 import logo from "../../public/logo-main.svg";
 import { ProfileBadge } from "@/components/ProfileBadge";
 import Link from "next/link";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "SportHive Connect",
@@ -46,6 +47,8 @@ export default function RootLayout({
 
           <main className="flex-1">{children}</main>
         </div>
+
+        <Toaster />
       </body>
     </html>
   );

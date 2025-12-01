@@ -1,49 +1,188 @@
-// app/onboarding/components/profile-details.tsx
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar as ChevronDown } from "lucide-react";
-
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Calendar as ChevronDown } from "lucide-react";
+import { ProfileDataType } from "../interfaces/profile-data-type";
+
+const nameValidator = z
+  .string()
+  .refine((s) => s.length > 0, { 
+    message: "This field is required." 
+  })
+  .refine((s) => s === s.trim(), {
+    message: "No leading or trailing spaces allowed.",
+  })
+  .refine((s) => /^[A-Za-z ]+$/.test(s), {
+    message: "Only alphabetic characters and spaces are allowed.",
+  })
+  .refine(
+    (s) => {
+      const len = s.trim().length;
+      return len >= 3 && len <= 20;
+    },
+    { message: "Name must be between 3 and 20 characters." }
+  );
+
+const schema = z.object({
+  firstName: nameValidator,
+  lastName: nameValidator,
+  date: z
+    .string()
+    .nonempty("Please select your date of birth.")
+    .refine(
+      (iso) => {
+        const d = new Date(iso + "T00:00:00");
+        if (isNaN(d.getTime())) return false;
+        const today = new Date();
+        let age = today.getFullYear() - d.getFullYear();
+        const m = today.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+        return age >= 13;
+      },
+      { message: "You must be at least 13 years old." }
+    ),
+  avatar: z.any().optional(),
+});
+
+type FormSchema = z.infer<typeof schema>;
 
 export default function ProfileDetailsForm({
   onContinue,
 }: {
-  onContinue?: (payload: {
-    firstName: string;
-    lastName: string;
-    date: string;
-  }) => void;
+  onContinue?: (payload: ProfileDataType ) => void;
 }) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    control,
+    formState: { errors, isSubmitting },
+    trigger,
+  } = useForm<FormSchema>({
+    resolver: zodResolver(schema),
+    defaultValues: { firstName: "", lastName: "", date: "", avatar: undefined },
+    mode: "onBlur",
+  });
+
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
-
   const [dobPickerOpen, setDobPickerOpen] = useState(false);
-  const [date, setDate] = useState<Date | undefined>(undefined);
+  const dateValue = useWatch({ control, name: "date" }) as string | undefined;
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const selectedDate = dateValue
+    ? new Date(dateValue + "T00:00:00")
+    : undefined;
+  const maxAvatarSize = 500 * 1024; // 500 KB
+  const minAvatarSize = 20 * 1024; // 20 KB
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+  useEffect(() => {
+    if (dobPickerOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [dobPickerOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
+  // avatar input handler — validates and sets form value
+  function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+
+    if (!allowedTypes.includes(f.type)) {
+      toast.error("Invalid file type", {
+        description: "Only JPG, JPEG, and PNG images are allowed.",
+      });
+      e.currentTarget.value = "";
+      return;
+    }
+
+    if (f.size < minAvatarSize) {
+      toast.error("Image too small", {
+        description: "Please upload an image at least 20 KB.",
+      });
+      e.currentTarget.value = "";
+      return;
+    }
+
+    if (f.size > maxAvatarSize) {
+      toast.error("Image too large", {
+        description: "Please upload an image smaller than 5 MB.",
+      });
+      e.currentTarget.value = "";
+      return;
+    }
+
+    // optional: you could check dimensions here by loading the image before accepting
+
     const url = URL.createObjectURL(f);
-    setAvatarPreview(url);
+    setAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+
+    // set form file value
+    setValue("avatar", f, { shouldValidate: false });
+    toast.success("Photo added", {
+      description: "Your avatar has been added.",
+    });
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const isoDate = date ? date.toISOString().slice(0, 10) : "";
-    const payload = { firstName, lastName, date: isoDate };
-    if (onContinue) onContinue(payload);
-    console.log("continue payload", payload);
+  // Calendar boundaries for >=13 years
+  const today = new Date();
+  const maxDate = new Date(
+    today.getFullYear() - 13,
+    today.getMonth(),
+    today.getDate()
+  );
+  const minDate = new Date(1900, 0, 1);
+  const startMonth = new Date(1900, 0, 1);
+  const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+
+  function onCalendarSelect(d?: Date) {
+    if (!d) return;
+    if (d < minDate || d > maxDate) {
+      // ignore invalid picks (calendar should disable them)
+      return;
+    }
+    const iso = d.toISOString().slice(0, 10);
+    setValue("date", iso, { shouldValidate: true, shouldDirty: true });
+    setDobPickerOpen(false);
+  }
+
+  async function onSubmit(values: FormSchema) {
+    // values are validated by Zod + RHF resolver
+    if (onContinue) {
+      const payload = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        date: values.date,
+        avatar: values.avatar ?? null,
+      };
+      await onContinue(payload);
+    }
+    console.log("submit payload", values);
   }
 
   return (
@@ -88,11 +227,13 @@ export default function ProfileDetailsForm({
           <div className="relative">
             <div className="w-32 h-32 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">
               {avatarPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={avatarPreview}
                   alt="avatar"
-                  className="w-full h-full object-cover"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover rounded-full"
+                  unoptimized
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-gray-300">
@@ -125,12 +266,11 @@ export default function ProfileDetailsForm({
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/jpg"
               className="sr-only"
-              onChange={handleFileChange}
+              onChange={onAvatarChange}
               id="avatar-upload"
             />
-
             <Button
               type="button"
               onClick={() => fileRef.current?.click()}
@@ -142,89 +282,142 @@ export default function ProfileDetailsForm({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <div className="grid grid-cols-1 gap-3">
             <div>
               <Label htmlFor="firstName">First Name</Label>
               <Input
                 id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                {...register("firstName")}
                 placeholder="First name"
                 className="mt-1"
-                required
+                aria-invalid={!!errors.firstName}
+                aria-describedby={
+                  errors.firstName ? "firstName-error" : undefined
+                }
+                onFocus={() => {
+                  /* RHF handles touched/dirty; trigger clears handled by mode */
+                }}
+                onBlur={() => {
+                  // run validation on blur
+                  void trigger("firstName");
+                }}
               />
+              {errors.firstName && (
+                <p
+                  id="firstName-error"
+                  role="alert"
+                  className="text-sm text-red-600 mt-1"
+                >
+                  {errors.firstName.message}
+                </p>
+              )}
             </div>
 
             <div>
               <Label htmlFor="lastName">Last Name</Label>
               <Input
                 id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                {...register("lastName")}
                 placeholder="Last name"
                 className="mt-1"
-                required
+                aria-invalid={!!errors.lastName}
+                aria-describedby={
+                  errors.lastName ? "lastName-error" : undefined
+                }
+                onBlur={() => {
+                  void trigger("lastName");
+                }}
               />
+              {errors.lastName && (
+                <p
+                  id="lastName-error"
+                  role="alert"
+                  className="text-sm text-red-600 mt-1"
+                >
+                  {errors.lastName.message}
+                </p>
+              )}
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="date" className="px-1">
-              Date of birth
-            </Label>
+          <div className="mt-2 relative">
+            {dobPickerOpen && (
+              <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                onClick={() => setDobPickerOpen(false)}
+              />
+            )}
 
-            <div className="mt-2">
-              <Popover open={dobPickerOpen} onOpenChange={setDobPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 justify-between font-normal"
-                  >
-                    <span>
-                      {date ? date.toLocaleDateString() : "Select date"}
-                    </span>
-                    <ChevronDown size={16} />
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent
-                  className="w-auto overflow-hidden p-0"
-                  align="start"
+            <Popover open={dobPickerOpen} onOpenChange={setDobPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-12 justify-between font-normal"
+                  aria-expanded={dobPickerOpen}
+                  aria-haspopup="dialog"
                 >
-                  <div className="p-3">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      captionLayout="dropdown"
-                      onSelect={(d) => {
-                        setDate(d);
-                        setDobPickerOpen(false);
-                      }}
-                    />
+                  <span>
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString()
+                      : "Select date"}
+                  </span>
+                  <ChevronDown size={16} />
+                </Button>
+              </PopoverTrigger>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <button
-                        type="button"
-                        className="text-sm px-3 py-1 rounded hover:bg-gray-100"
-                        onClick={() => {
-                          setDate(undefined);
-                        }}
-                      >
-                        Clear
-                      </button>
-                      <div className="text-sm text-gray-500">
-                        Tap a date to select
-                      </div>
+              <PopoverContent
+                className="w-auto overflow-hidden p-0 z-50 relative"
+                align="start"
+              >
+                <div className="p-3">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    captionLayout="dropdown"
+                    startMonth={startMonth}
+                    endMonth={endMonth}
+                    disabled={[{ after: maxDate }, { before: minDate }]}
+                    onSelect={onCalendarSelect}
+                  />
+
+                  <div className="flex items-center justify-between mt-2">
+                    <button
+                      type="button"
+                      className="text-sm px-3 py-1 rounded hover:bg-gray-100"
+                      onClick={() => setValue("date", "")}
+                    >
+                      Clear
+                    </button>
+
+                    <div className="text-gray-500" style={{ fontSize: "10px" }}>
+                      Select your birth date (must be 13+ years)
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            {errors.date && (
+              <p
+                id="date-error"
+                role="alert"
+                className="text-sm text-red-600 mt-2"
+              >
+                {errors.date.message}
+              </p>
+            )}
           </div>
 
           <div className="pt-4">
-            <Button className="w-full py-3" type="submit">
+            <Button
+              className="w-full py-3"
+              type="submit"
+              disabled={isSubmitting}
+            >
               Continue
             </Button>
           </div>

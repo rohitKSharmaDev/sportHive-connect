@@ -6,7 +6,6 @@ import { Calendar as CalendarIcon } from "lucide-react";
 
 import "react-day-picker/dist/style.css";
 
-// shadcn/ui primitives (expects these to exist in your project under components/ui)
 import {
   Popover,
   PopoverTrigger,
