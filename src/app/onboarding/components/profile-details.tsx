@@ -18,6 +18,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as ChevronDown } from "lucide-react";
 import { ProfileDataType } from "../interfaces/profile-data-type";
+import { useAvatar } from "@/app/providers/AvatarProvider";
 
 const nameValidator = z
   .string()
@@ -91,6 +92,8 @@ export default function ProfileDetailsForm({
   const minAvatarSize = 20 * 1024; // 20 KB
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
 
+  const { setAvatarUrl } = useAvatar();
+
   useEffect(() => {
     if (dobPickerOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
@@ -106,7 +109,7 @@ export default function ProfileDetailsForm({
   }, [avatarPreview]);
 
   // avatar input handler — validates and sets form value
-  function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
 
@@ -134,15 +137,15 @@ export default function ProfileDetailsForm({
       return;
     }
 
-    // optional: you could check dimensions here by loading the image before accepting
-
     const url = URL.createObjectURL(f);
     setAvatarPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return url;
     });
 
-    // set form file value
+    await setAvatarUrl(url);
+    
+
     setValue("avatar", f, { shouldValidate: false });
     toast.success("Photo added", {
       description: "Your avatar has been added.",
@@ -163,7 +166,6 @@ export default function ProfileDetailsForm({
   function onCalendarSelect(d?: Date) {
     if (!d) return;
     if (d < minDate || d > maxDate) {
-      // ignore invalid picks (calendar should disable them)
       return;
     }
     const iso = d.toISOString().slice(0, 10);
@@ -179,6 +181,7 @@ export default function ProfileDetailsForm({
         lastName: values.lastName.trim(),
         date: values.date,
         avatar: values.avatar ?? null,
+        userInterests: [],
       };
       await onContinue(payload);
     }

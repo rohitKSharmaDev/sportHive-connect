@@ -4,4 +4,5 @@ export type ProfileDataType = {
   date?: string;
   gender?: string;
   avatar?: string | null;
+  userInterests: string[];
 };

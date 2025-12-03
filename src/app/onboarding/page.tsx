@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProfileDetails from "./components/profile-details";
 import GenderSelect from "./components/gender-select";
 import UserInterests from "./components/user-interests";
 import { ProfileDataType } from "./interfaces/profile-data-type";
+import { toast } from "sonner";
 
 function PreparingAccount() {
   return (
@@ -73,12 +74,45 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (step !== 3) return;
-    const t = setTimeout(() => {
-      router.push("/dashboard");
-    }, 5000);
-    return () => clearTimeout(t);
-  }, [step, router]);
+    if (step !== 3 || !profileData) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        // show preparing UI while updating
+        // call the server API to save profile and mark profileDone
+        const res = await fetch("/api/user/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gender: profileData.gender,
+            interests: profileData.userInterests,
+          }),
+          credentials: "same-origin",
+        });
+
+        if (!mounted) return;
+
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "error");
+          console.error("failed to update user:", txt);
+          toast.error?.("Could not complete onboarding");
+          // optionally revert to previous step
+          return;
+        }
+
+        // success — push to dashboard
+        router.push("/dashboard");
+      } catch (e) {
+        console.error("onboarding submit error", e);
+        toast.error?.("Network error");
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [step, profileData, router]);
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-start justify-center py-8 px-4">

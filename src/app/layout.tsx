@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../lib/auth";
+import { SessionProviderClient } from "./providers/SessionProviderClient";
+
 
 import Image from "next/image";
 import logo from "../../public/logo-main.svg";
@@ -8,23 +12,24 @@ import { ProfileBadge } from "@/components/ProfileBadge";
 import Link from "next/link";
 import { Toaster } from "sonner";
 
+
 export const metadata: Metadata = {
   title: "SportHive Connect",
   description: "Find. Join. Play together.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
-  const user = null;
+  const session = await getServerSession(authOptions);
+  console.log({ session })
 
   return (
     <html lang="en">
       <body className={cn("bg-slate-50 text-slate-900")}>
-        <div className="flex flex-col">
+        <SessionProviderClient session={session}>
           <header className="border-b bg-white/80 backdrop-blur">
             <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-2">
               <div className="flex items-center gap-2">
@@ -40,15 +45,14 @@ export default function RootLayout({
 
               {/* Right side: put auth/profile links later */}
               <nav className="flex items-center gap-4 text-sm">
-                <ProfileBadge user={user} />
+                <ProfileBadge />
               </nav>
             </div>
           </header>
 
           <main className="flex-1">{children}</main>
-        </div>
-
-        <Toaster />
+          <Toaster />
+        </SessionProviderClient>
       </body>
     </html>
   );

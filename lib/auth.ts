@@ -19,11 +19,15 @@ export const authOptions: NextAuthOptions = {
         const email = credentials?.email?.toLowerCase();
         if (!email) return null;
 
-        // Upsert user in DB so you have a record
         const user = await prisma.user.upsert({
           where: { email },
           update: { emailVerified: new Date() },
-          create: { email, name: email.split("@")[0] },
+          create: {
+            email,
+            name: email.split("@")[0],
+            emailVerified: new Date(),
+            profileDone: false,
+          },
         });
 
         // Return minimal user object NextAuth expects
@@ -66,17 +70,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  session: { strategy: "jwt" },
+  session: { 
+    strategy: "jwt" 
+    // strategy: "database",
+  },
 
   callbacks: {
+    async jwt({ token, user }) {
+      // On first login, merge user info into token
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
+
     async session({ session, token }) {
-      if (session.user && token.sub) session.user.id = token.sub;
+      // Expose token into session
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+      }
       return session;
     },
   },
-
-  // pages: {
-  //   signIn: "/auth/sign-in",
-  //   verifyRequest: "/auth/verify-request",
-  // },
+  pages: {
+    signIn: "/auth/sign-in",
+  },
 };

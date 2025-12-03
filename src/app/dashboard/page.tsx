@@ -1,13 +1,17 @@
-import React from 'react';
 import { Button } from '@/components/ui/button'; // Assuming ShadCN UI Button component
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Assuming ShadCN UI Card components
+import { authOptions } from '../../../lib/auth';
+import { getServerSession } from 'next-auth';
 
 export const metadata = {
   title: 'Dashboard - SportHive Connect',
   description: 'Your central hub to manage and view your activities.',
 };
 
-const DashboardPage = () => {
+const DashboardPage = async () => {
+  const session = await getServerSession(authOptions);
+  console.log('User:', session);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800">Welcome to the Dashboard</h1>

@@ -7,25 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Primary unified User model
 model User {
-  id            String       @id @default(cuid())
+  id            String    @id @default(cuid())
+  email         String    @unique
   name          String?
-  email         String?      @unique
+  gender        String?
+  interests     String[]  @default([])
+  profileDone   Boolean   @default(false)
   emailVerified DateTime?
   image         String?
-  role          String       @default("USER")
-  createdAt     DateTime     @default(now())
+  role          String    @default("USER")
+  createdAt     DateTime  @default(now())
 
-  // Your relations
+  // relations
   events        Tournament[] @relation("OrganizerEvents")
   participants  Participant[]
-
   accounts      Account[]
   sessions      Session[]
 }
 
+/// domain models
 model Tournament {
-  id           String        @id @default(cuid())
+  id           String       @id @default(cuid())
   title        String
   description  String?
   location     String?
@@ -33,25 +37,25 @@ model Tournament {
   startDate    DateTime
   endDate      DateTime?
   price        Float?
-  organizer    User          @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizer    User         @relation("OrganizerEvents", fields: [organizerId], references: [id])
   organizerId  String
   participants Participant[]
-  createdAt    DateTime      @default(now())
+  createdAt    DateTime     @default(now())
 }
 
 model Participant {
-  id           String       @id @default(cuid())
-  user         User         @relation(fields: [userId], references: [id])
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id])
   userId       String
-  tournament   Tournament   @relation(fields: [tournamentId], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
   tournamentId String
-  status       String       @default("JOINED")
-  joinedAt     DateTime     @default(now())
+  status       String    @default("JOINED")
+  joinedAt     DateTime  @default(now())
 
   @@unique([userId, tournamentId])
 }
 
-/// NextAuth models (standard)
+/// NextAuth default models
 model Account {
   id                String  @id @default(cuid())
   userId            String
