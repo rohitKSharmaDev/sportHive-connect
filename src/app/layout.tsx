@@ -30,7 +30,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={cn("bg-slate-50 text-slate-900")}>
         <SessionProviderClient session={session}>
-          <header className="border-b bg-white/80 backdrop-blur">
+          <header className="border-b bg-white/80 backdrop-blur fixed top-0 w-full">
             <div className="mx-auto max-w-7xl flex items-center justify-between px-4 py-2">
               <div className="flex items-center gap-2">
                 <Link href="/">

@@ -115,7 +115,7 @@ export default function OnboardingPage() {
   }, [step, profileData, router]);
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-start justify-center py-8 px-4">
+    <div className="bg-gray-50 flex items-start justify-center py-8 px-4">
       <div className="w-full max-w-md">
         {step === 0 && (
           <ProfileDetails
@@ -165,6 +165,6 @@ export default function OnboardingPage() {
 
         {step === 3 && <PreparingAccount />}
       </div>
-    </main>
+    </div>
   );
 }

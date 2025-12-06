@@ -2,17 +2,8 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-
-const INTERESTS = [
-  "Acrobatics",
-  "Outdoors",
-  "Ball Sports",
-  "Extreme Sports",
-  "Boxing",
-  "Strength & Conditioning",
-  "Running",
-  "Yoga",
-];
+import { sportsInterstsList } from "@/lib/constants";
+import Image from "next/image";
 
 export default function UserInterests({
   initial = [] as string[],
@@ -68,13 +59,13 @@ export default function UserInterests({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 mb-6">
-          {INTERESTS.map((it) => {
-            const active = selected.includes(it);
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 mb-6">
+          {sportsInterstsList.map((sport) => {
+            const active = selected.includes(sport.sportName);
             return (
               <button
-                key={it}
-                onClick={() => toggle(it)}
+                key={sport.sportName}
+                onClick={() => toggle(sport.sportName)}
                 className={`flex flex-col overflow-hidden rounded-2xl p-0 border transition transform-gpu focus:outline-none
                   ${
                     active
@@ -82,7 +73,7 @@ export default function UserInterests({
                       : "bg-white border-gray-200 hover:shadow-md"
                   }`}
                 aria-pressed={active}
-                aria-label={it}
+                aria-label={sport.sportName}
                 style={{ minHeight: 120 }}
               >
                 {/* image area - decorative */}
@@ -91,7 +82,12 @@ export default function UserInterests({
                     active ? "bg-orange-400" : "bg-gray-100"
                   } overflow-hidden`}
                 >
-                  <div className={`w-full h-full object-cover`} />
+                  <Image
+                    src={sport.sportThumbnailImg!}
+                    alt={sport.sportName}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
 
                 {/* label */}
@@ -100,7 +96,7 @@ export default function UserInterests({
                     active ? "text-white" : "text-gray-700"
                   }`}
                 >
-                  {it}
+                  {sport.sportName}
                 </div>
               </button>
             );

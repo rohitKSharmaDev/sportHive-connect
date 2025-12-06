@@ -4,8 +4,6 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
-import "react-day-picker/dist/style.css";
-
 import {
   Popover,
   PopoverTrigger,
