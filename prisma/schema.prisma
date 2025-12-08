@@ -11,12 +11,15 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  name          String?
-  gender        String?
-  interests     String[]  @default([])
+  firstName           String?
+  lastName            String?
+  dob                 DateTime?
+  gender              String?
+  sportsInterests     String[]  @default([])
+  onboardingCompleted Boolean   @default(false)
   profileDone   Boolean   @default(false)
   emailVerified DateTime?
-  image         String?
+  avatarImage         String?
   role          String    @default("USER")
   createdAt     DateTime  @default(now())
 

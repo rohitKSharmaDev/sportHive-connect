@@ -9,12 +9,27 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
+  const {
+    firstName,
+    lastName,
+    dob,
+    gender,
+    sportsInterests,
+    avatarImage,
+    onboardingCompleted,
+  } = body;
+
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      gender: body.gender,
-      interests: body.interests,
+      firstName,
+      lastName,
+      avatarImage,
+      dob: new Date(dob),
+      gender,
+      sportsInterests,
+      onboardingCompleted: onboardingCompleted ?? true,
       profileDone: true,
     },
   });

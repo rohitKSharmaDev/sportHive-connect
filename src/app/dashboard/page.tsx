@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button'; // Assuming ShadCN UI Button co
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Assuming ShadCN UI Card components
 import { authOptions } from '../../../lib/auth';
 import { getServerSession } from 'next-auth';
+import { prisma } from '../../../lib/prisma';
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: 'Dashboard - SportHive Connect',
@@ -10,7 +12,18 @@ export const metadata = {
 
 const DashboardPage = async () => {
   const session = await getServerSession(authOptions);
-  console.log('User:', session);
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session?.user?.id,
+      onboardingCompleted: true,
+    },
+  });
+
+  if (!user?.onboardingCompleted) {
+    redirect("/onboarding");
+  }
+
+  console.log("Dashboard user:", user);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

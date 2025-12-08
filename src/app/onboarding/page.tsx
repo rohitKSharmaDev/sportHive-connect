@@ -8,6 +8,17 @@ import UserInterests from "./components/user-interests";
 import { ProfileDataType } from "./interfaces/profile-data-type";
 import { toast } from "sonner";
 
+async function completeOnboarding(router: ReturnType<typeof useRouter>) {
+  const response = await fetch('/api/user/onboarding', {
+    method: 'POST',
+  });
+
+  if (response.ok) {
+    router.push('/dashboard'); // or your main app route
+    router.refresh(); // Refresh to show BottomNav
+  }
+}
+
 function PreparingAccount() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-6">
@@ -76,6 +87,8 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (step !== 3 || !profileData) return;
 
+    console.log({ profileData });
+
     let mounted = true;
     (async () => {
       try {
@@ -84,10 +97,7 @@ export default function OnboardingPage() {
         const res = await fetch("/api/user/update", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gender: profileData.gender,
-            interests: profileData.userInterests,
-          }),
+          body: JSON.stringify(profileData),
           credentials: "same-origin",
         });
 
@@ -101,8 +111,8 @@ export default function OnboardingPage() {
           return;
         }
 
-        // success — push to dashboard
-        router.push("/dashboard");
+        // success — call completeOnboarding
+        await completeOnboarding(router);
       } catch (e) {
         console.error("onboarding submit error", e);
         toast.error?.("Network error");
@@ -152,9 +162,9 @@ export default function OnboardingPage() {
               if (!selected || selected.length < 2) return;
               const updated = {
                 ...(profileData ?? {}),
-                interests: selected,
+                sportsInterests: selected,
               } as ProfileDataType & {
-                interests?: string[];
+                sportsInterests?: string[];
               };
               setProfileData(updated);
               // move to preparing state which will redirect after 5s

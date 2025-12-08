@@ -1,8 +1,8 @@
 export type ProfileDataType = {
   firstName: string;
   lastName: string;
-  date?: string;
+  dob?: string;
   gender?: string;
-  avatar?: string | null;
-  userInterests: string[];
+  avatarImage?: string | null;
+  sportsInterests: string[];
 };

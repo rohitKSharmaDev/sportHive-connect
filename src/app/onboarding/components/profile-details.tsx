@@ -42,7 +42,7 @@ const nameValidator = z
 const schema = z.object({
   firstName: nameValidator,
   lastName: nameValidator,
-  date: z
+  dob: z
     .string()
     .nonempty("Please select your date of birth.")
     .refine(
@@ -76,14 +76,14 @@ export default function ProfileDetailsForm({
     trigger,
   } = useForm<FormSchema>({
     resolver: zodResolver(schema),
-    defaultValues: { firstName: "", lastName: "", date: "", avatar: undefined },
+    defaultValues: { firstName: "", lastName: "", dob: "", avatar: undefined },
     mode: "onBlur",
   });
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [dobPickerOpen, setDobPickerOpen] = useState(false);
-  const dateValue = useWatch({ control, name: "date" }) as string | undefined;
+  const dateValue = useWatch({ control, name: "dob" }) as string | undefined;
 
   const selectedDate = dateValue
     ? new Date(dateValue + "T00:00:00")
@@ -169,7 +169,7 @@ export default function ProfileDetailsForm({
       return;
     }
     const iso = d.toISOString().slice(0, 10);
-    setValue("date", iso, { shouldValidate: true, shouldDirty: true });
+    setValue("dob", iso, { shouldValidate: true, shouldDirty: true });
     setDobPickerOpen(false);
   }
 
@@ -179,9 +179,9 @@ export default function ProfileDetailsForm({
       const payload = {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
-        date: values.date,
-        avatar: values.avatar ?? null,
-        userInterests: [],
+        dob: values.dob,
+        avatarImage: values.avatar ?? null,
+        sportsInterests: [],
       };
       await onContinue(payload);
     }
@@ -392,7 +392,7 @@ export default function ProfileDetailsForm({
                     <button
                       type="button"
                       className="text-sm px-3 py-1 rounded hover:bg-gray-100"
-                      onClick={() => setValue("date", "")}
+                      onClick={() => setValue("dob", "")}
                     >
                       Clear
                     </button>
@@ -404,13 +404,13 @@ export default function ProfileDetailsForm({
                 </div>
               </PopoverContent>
             </Popover>
-            {errors.date && (
+            {errors.dob && (
               <p
                 id="date-error"
                 role="alert"
                 className="text-sm text-red-600 mt-2"
               >
-                {errors.date.message}
+                {errors.dob.message}
               </p>
             )}
           </div>

@@ -14,8 +14,8 @@ export async function PATCH(req: Request) {
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
-    data: { image: imageUrl },
-    select: { id: true, image: true },
+    data: { avatarImage: imageUrl },
+    select: { id: true, avatarImage: true },
   });
 
   return NextResponse.json(user);
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ image: null });
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { image: true },
+    select: { avatarImage: true },
   });
   return NextResponse.json(user ?? { image: null });
 }
