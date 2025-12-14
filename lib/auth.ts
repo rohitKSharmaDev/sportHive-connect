@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
           create: {
             email,
             emailVerified: new Date(),
-            profileDone: false,
+            onboardingCompleted: false,
           },
         });
 
@@ -69,18 +69,79 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  session: { 
-    strategy: "jwt" 
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 5,
     // strategy: "database",
   },
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       // On first login, merge user info into token
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
+        try {
+          token.id = user.id;
+          token.email = user.email;
+
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              onboardingCompleted: true,
+              avatarImage: true,
+              firstName: true,
+              lastName: true,
+            },
+          });
+
+          token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+          token.avatarImage = dbUser?.avatarImage ?? null;
+          token.firstName = dbUser?.firstName ?? null;
+          token.lastName = dbUser?.lastName ?? null;
+
+        } catch (error) {
+          console.error("Error fetching user in JWT callback:", error);
+          token.onboardingCompleted = false;
+        }
       }
+
+      if (trigger === "update") {
+        if (session?.onboardingCompleted !== undefined) {
+          token.onboardingCompleted = session.onboardingCompleted;
+        }
+        if (session?.avatarImage !== undefined) {
+          token.avatarImage = session.avatarImage; // ✅ Add this
+        }
+        if (session?.firstName !== undefined) {
+          token.firstName = session.firstName;
+        }
+        if (session?.lastName !== undefined) {
+          token.lastName = session.lastName;
+        }
+      }
+
+      if (trigger === "update" && !session) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { 
+              onboardingCompleted: true,
+              avatarImage: true,
+              firstName: true,
+              lastName: true,
+            },
+          });
+          
+          if (dbUser) {
+            token.onboardingCompleted = dbUser.onboardingCompleted;
+            token.avatarImage = dbUser.avatarImage;
+            token.firstName = dbUser.firstName;
+            token.lastName = dbUser.lastName;
+          }
+        } catch (error) {
+          console.error("Error refreshing user data:", error);
+        }
+      }
+      console.log({ token });
       return token;
     },
 
@@ -89,8 +150,21 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean;
+        session.user.image = token.avatarImage as string | null; // ✅ Add this
+        session.user.name =
+          token.firstName && token.lastName
+            ? `${token.firstName} ${token.lastName}`
+            : session.user.email; // ✅ Add this
       }
       return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
   pages: {

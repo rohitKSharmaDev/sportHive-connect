@@ -143,10 +143,9 @@ export default function ProfileDetailsForm({
       return url;
     });
 
-    await setAvatarUrl(url);
-    
-
+    setAvatarUrl(url);
     setValue("avatar", f, { shouldValidate: false });
+    
     toast.success("Photo added", {
       description: "Your avatar has been added.",
     });

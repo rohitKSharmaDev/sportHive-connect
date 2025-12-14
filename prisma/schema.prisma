@@ -17,7 +17,6 @@ model User {
   gender              String?
   sportsInterests     String[]  @default([])
   onboardingCompleted Boolean   @default(false)
-  profileDone   Boolean   @default(false)
   emailVerified DateTime?
   avatarImage         String?
   role          String    @default("USER")

@@ -35,6 +35,8 @@ export function ProfileBadge() {
   // choose image source by priority
   const imageSrc = avatarUrl ?? user?.image ?? null;
 
+  console.log({ imageSrc });
+
   return (
     <Button
       onClick={handleClick}

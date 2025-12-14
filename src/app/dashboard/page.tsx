@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button'; // Assuming ShadCN UI Button component
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Assuming ShadCN UI Card components
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { authOptions } from '../../../lib/auth';
 import { getServerSession } from 'next-auth';
 import { prisma } from '../../../lib/prisma';
@@ -12,6 +12,11 @@ export const metadata = {
 
 const DashboardPage = async () => {
   const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect("/auth/sign-in");
+  }
+
   const user = await prisma.user.findUnique({
     where: {
       id: session?.user?.id,

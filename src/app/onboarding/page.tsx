@@ -7,17 +7,7 @@ import GenderSelect from "./components/gender-select";
 import UserInterests from "./components/user-interests";
 import { ProfileDataType } from "./interfaces/profile-data-type";
 import { toast } from "sonner";
-
-async function completeOnboarding(router: ReturnType<typeof useRouter>) {
-  const response = await fetch('/api/user/onboarding', {
-    method: 'POST',
-  });
-
-  if (response.ok) {
-    router.push('/dashboard'); // or your main app route
-    router.refresh(); // Refresh to show BottomNav
-  }
-}
+import { useSession } from "next-auth/react";
 
 function PreparingAccount() {
   return (
@@ -82,7 +72,41 @@ function PreparingAccount() {
 export default function OnboardingPage() {
   const [step, setStep] = useState<number>(0);
   const [profileData, setProfileData] = useState<ProfileDataType | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const router = useRouter();
+
+  const { data: session, status, update } = useSession();
+
+  console.log({ session, status });
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/sign-in");
+    }
+  }, [status, router]);
+
+  // ✅ Check if user already completed onboarding
+  useEffect(() => {
+    async function checkOnboardingStatus() {
+      if (status === "authenticated") {
+        try {
+          const response = await fetch("/api/user/update");
+          const userData = await response.json();
+
+          if (userData?.onboardingCompleted) {
+            router.push("/dashboard");
+          } else {
+            setIsCheckingStatus(false);
+          }
+        } catch (error) {
+          console.error("Error checking onboarding status:", error);
+          setIsCheckingStatus(false);
+        }
+      }
+    }
+
+    checkOnboardingStatus();
+  }, [status, router]);
 
   useEffect(() => {
     if (step !== 3 || !profileData) return;
@@ -92,12 +116,13 @@ export default function OnboardingPage() {
     let mounted = true;
     (async () => {
       try {
-        // show preparing UI while updating
-        // call the server API to save profile and mark profileDone
         const res = await fetch("/api/user/update", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(profileData),
+          body: JSON.stringify({
+            ...profileData,
+            onboardingCompleted: true,
+          }),
           credentials: "same-origin",
         });
 
@@ -107,12 +132,19 @@ export default function OnboardingPage() {
           const txt = await res.text().catch(() => "error");
           console.error("failed to update user:", txt);
           toast.error?.("Could not complete onboarding");
-          // optionally revert to previous step
           return;
         }
 
-        // success — call completeOnboarding
-        await completeOnboarding(router);
+        await update({
+          onboardingCompleted: true,
+          avatarImage: profileData?.avatarImage,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        window.location.href = "/dashboard";
+
       } catch (e) {
         console.error("onboarding submit error", e);
         toast.error?.("Network error");
@@ -122,7 +154,15 @@ export default function OnboardingPage() {
     return () => {
       mounted = false;
     };
-  }, [step, profileData, router]);
+  }, [step, profileData, router, update]);
+
+  if (status === "loading" || isCheckingStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-sm text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 flex items-start justify-center py-8 px-4">
@@ -142,13 +182,12 @@ export default function OnboardingPage() {
             totalSteps={4}
             onBack={() => setStep(0)}
             onComplete={(gender) => {
-              // merge gender into saved profileData and go to interests
               const final = {
                 ...(profileData ?? {}),
                 gender,
               } as ProfileDataType;
               setProfileData(final);
-              setStep(2); // go to UserInterests
+              setStep(2);
             }}
           />
         )}

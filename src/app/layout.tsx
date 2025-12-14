@@ -5,7 +5,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../lib/auth";
 import { SessionProviderClient } from "./providers/SessionProviderClient";
 
-
 import Image from "next/image";
 import logo from "../../public/logo-main.svg";
 import { ProfileBadge } from "@/components/ProfileBadge";
@@ -13,7 +12,6 @@ import Link from "next/link";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/navigation/BottomNav";
 import { prisma } from "lib/prisma";
-
 
 export const metadata: Metadata = {
   title: "SportHive Connect",
@@ -26,11 +24,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  console.log({ session })
+  console.log({ session });
 
   let showBottomNav = false;
   
-  if (session?.user?.id) {
+  if (session?.user && session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { onboardingCompleted: true }
